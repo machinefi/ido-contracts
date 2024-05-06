@@ -4,49 +4,49 @@ pragma solidity ^0.8.19;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/ILaunchpad.sol";
-import "./interfaces/IWSProject.sol";
+import "./interfaces/IProject.sol";
 import "./interfaces/IioIDFactory.sol";
-import {Project} from "./Project.sol";
+import {Pod} from "./Pod.sol";
 
 contract Launchpad is ILaunchpad, Ownable {
-    address public override wsProject;
+    address public override project;
     address public override ioIDFactory;
 
-    mapping(uint256 => address) public override getProject;
+    mapping(uint256 => address) public override getPod;
     mapping(address => Status) _status;
 
-    constructor(address _wsProject, address _ioIDFactory) {
-        wsProject = _wsProject;
+    constructor(address _project, address _ioIDFactory) {
+        project = _project;
         ioIDFactory = _ioIDFactory;
     }
 
-    function applyProject(uint256 _wsProjectId, address _nft, uint256 _amount, uint256 _price)
+    function applyPod(uint256 _projectId, address _nft, uint256 _amount, uint256 _price)
         external
         override
-        returns (address project_)
+        returns (address pod_)
     {
         require(_nft != address(0), "zero address");
         require(_amount > 0, "zero amount");
-        require(getProject[_wsProjectId] == address(0), "already applied");
-        require(IWSProject(wsProject).ownerOf(_wsProjectId) == msg.sender, "only project owner");
-        require(IioIDFactory(ioIDFactory).projectAppliedAmount(_wsProjectId) >= _amount, "exceed bought ioIDs");
+        require(getPod[_projectId] == address(0), "already applied");
+        require(IProject(project).ownerOf(_projectId) == msg.sender, "only project owner");
+        require(IioIDFactory(ioIDFactory).projectAppliedAmount(_projectId) >= _amount, "exceed bought ioIDs");
 
-        bytes memory bytecode = type(Project).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(_wsProjectId, _nft));
+        bytes memory bytecode = type(Pod).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(_projectId, _nft));
         assembly {
-            project_ := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            pod_ := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        Project(project_).initialize(_wsProjectId, _nft, _price, _amount, msg.sender);
-        getProject[_wsProjectId] = project_;
-        _status[project_] = Status.Pending;
+        Pod(pod_).initialize(_projectId, _nft, _price, _amount, msg.sender);
+        getPod[_projectId] = pod_;
+        _status[pod_] = Status.Pending;
 
-        emit ApplyProject(_wsProjectId, _nft, project_);
+        emit ApplyPod(_projectId, _nft, pod_);
     }
 
-    function status(address _project) external view returns (Status) {
-        Status _s = _status[_project];
+    function status(address _pod) external view returns (Status) {
+        Status _s = _status[_pod];
         if (_s == Status.Selling) {
-            Project _p = Project(_project);
+            Pod _p = Pod(_pod);
             if (_p.soldAmount() == _p.total()) {
                 return Status.Sold;
             }
@@ -54,24 +54,24 @@ contract Launchpad is ILaunchpad, Ownable {
         return _s;
     }
 
-    function start(address _project) external override onlyOwner {
-        Status _s = _status[_project];
+    function start(address _pod) external override onlyOwner {
+        Status _s = _status[_pod];
         require(_s == Status.Pending || _s == Status.Stopped, "only pending or stopped");
-        _status[_project] = Status.Selling;
+        _status[_pod] = Status.Selling;
 
-        emit StartProject(_project);
+        emit StartPod(_pod);
     }
 
-    function stop(address _project) external override onlyOwner {
-        require(_status[_project] == Status.Selling, "only selling");
+    function stop(address _pod) external override onlyOwner {
+        require(_status[_pod] == Status.Selling, "only selling");
 
-        _status[_project] = Status.Stopped;
-        emit StopProject(_project);
+        _status[_pod] = Status.Stopped;
+        emit StopPod(_pod);
     }
 
-    function withdraw(address _project, address _recipient, uint256 _amount) external override onlyOwner {
-        require(_status[_project] != Status.Pending, "invalid status");
+    function withdraw(address _pod, address _recipient, uint256 _amount) external override onlyOwner {
+        require(_status[_pod] != Status.Pending, "invalid status");
 
-        Project(_project).withdraw(_recipient, _amount);
+        Pod(_pod).withdraw(_recipient, _amount);
     }
 }

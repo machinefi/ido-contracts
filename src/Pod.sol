@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./interfaces/IProject.sol";
+import "./interfaces/IPod.sol";
 import "./interfaces/ILaunchpad.sol";
+import "./interfaces/IioIDFactory.sol";
 
 interface IMintableNFT {
     function mint(address _to) external returns (uint256);
 }
 
-contract Project is IProject {
+contract Pod is IPod {
     address public override launchpad;
-    uint256 public override wsProjectId;
+    uint256 public override projectId;
     address public override nft;
     uint256 public override price;
     uint256 public override total;
@@ -21,16 +22,15 @@ contract Project is IProject {
         launchpad = msg.sender;
     }
 
-    function initialize(uint256 _wsProjectId, address _nft, uint256 _price, uint256 _total, address _operator)
-        external
-    {
+    function initialize(uint256 _projectId, address _nft, uint256 _price, uint256 _total, address _operator) external {
         require(launchpad == msg.sender, "only launchpad");
 
-        wsProjectId = _wsProjectId;
+        projectId = _projectId;
         nft = _nft;
         price = _price;
         total = _total;
         operator = _operator;
+        emit Initialize(_projectId, _nft, _price, _total, _operator);
     }
 
     function changeOperator(address _operator) external override {
@@ -39,6 +39,20 @@ contract Project is IProject {
 
         operator = _operator;
         emit ChangeOperator(_operator);
+    }
+
+    function extend(uint256 _amount) external {
+        require(_amount > 0, "zero amount");
+        require(operator == msg.sender, "only operator");
+        require(
+            IioIDFactory(ILaunchpad(launchpad).ioIDFactory()).projectAppliedAmount(projectId) >= total + _amount,
+            "exceed bought ioIDs"
+        );
+
+        unchecked {
+            total += _amount;
+        }
+        emit ExtendPod(_amount);
     }
 
     function withdraw(address _recipient, uint256 _amount) external {
