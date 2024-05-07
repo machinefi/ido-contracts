@@ -14,11 +14,11 @@ interface ILaunchpad {
     event StopPod(address indexed pod);
 
     function project() external view returns (address);
-    function ioIDFactory() external view returns (address);
+    function ioIDStore() external view returns (address);
     function getPod(uint256 _projectId) external view returns (address);
     function status(address _pod) external view returns (Status);
 
-    function applyPod(uint256 _projectId, address _nft, uint256 _amount, uint256 _price) external returns (address);
+    function applyPod(uint256 _projectId, uint256 _amount, uint256 _price) external returns (address);
     function start(address _pod) external;
     function stop(address _pod) external;
 

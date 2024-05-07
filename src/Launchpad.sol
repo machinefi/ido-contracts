@@ -5,31 +5,30 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/ILaunchpad.sol";
 import "./interfaces/IProject.sol";
-import "./interfaces/IioIDFactory.sol";
+import "./interfaces/IioIDStore.sol";
 import {Pod} from "./Pod.sol";
 
 contract Launchpad is ILaunchpad, Ownable {
     address public override project;
-    address public override ioIDFactory;
+    address public override ioIDStore;
 
     mapping(uint256 => address) public override getPod;
     mapping(address => Status) _status;
 
-    constructor(address _project, address _ioIDFactory) {
+    constructor(address _project, address _ioIDStore) {
         project = _project;
-        ioIDFactory = _ioIDFactory;
+        ioIDStore = _ioIDStore;
     }
 
-    function applyPod(uint256 _projectId, address _nft, uint256 _amount, uint256 _price)
-        external
-        override
-        returns (address pod_)
-    {
-        require(_nft != address(0), "zero address");
+    function applyPod(uint256 _projectId, uint256 _amount, uint256 _price) external override returns (address pod_) {
         require(_amount > 0, "zero amount");
         require(getPod[_projectId] == address(0), "already applied");
         require(IProject(project).ownerOf(_projectId) == msg.sender, "only project owner");
-        require(IioIDFactory(ioIDFactory).projectAppliedAmount(_projectId) >= _amount, "exceed bought ioIDs");
+
+        IioIDStore _ioIdStore = IioIDStore(ioIDStore);
+        require(_ioIdStore.projectAppliedAmount(_projectId) >= _amount, "exceed bought ioIDs");
+
+        address _nft = _ioIdStore.projectDeviceContract(_projectId);
 
         bytes memory bytecode = type(Pod).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_projectId, _nft));

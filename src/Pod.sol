@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./interfaces/IPod.sol";
 import "./interfaces/ILaunchpad.sol";
-import "./interfaces/IioIDFactory.sol";
+import "./interfaces/IioIDStore.sol";
 
 interface IMintableNFT {
     function mint(address _to) external returns (uint256);
@@ -45,7 +45,7 @@ contract Pod is IPod {
         require(_amount > 0, "zero amount");
         require(operator == msg.sender, "only operator");
         require(
-            IioIDFactory(ILaunchpad(launchpad).ioIDFactory()).projectAppliedAmount(projectId) >= total + _amount,
+            IioIDStore(ILaunchpad(launchpad).ioIDStore()).projectAppliedAmount(projectId) >= total + _amount,
             "exceed bought ioIDs"
         );
 
