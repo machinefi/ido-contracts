@@ -8,6 +8,15 @@ forge create --legacy --rpc-url $ETH_RPC_URL \
 
 // IDO NFT: 0xE04dFA88df72872c53DeE130c3f42C2142B6A158
 // Pod: 0xd146879c54e97fd7eF60e605B12b2f4827DE98E6
+
+// DummyERC20: 0xF16C10733Ea65F47aE341d184bA4b88AEDb5FE83
+forge create --legacy --rpc-url $ETH_RPC_URL \
+  --private-key $PRIVATE_KEY src/test/DummyERC20.sol:DummyERC20
+
+// 0x65Bd8E89559f2b4734117c841Dc6740225BdF2b1
+forge create --legacy --rpc-url $ETH_RPC_URL \
+  --constructor-args "0x95cB18889B968AbABb9104f30aF5b310bD007Fd8" \
+  --private-key $PRIVATE_KEY src/PodProxy.sol:PodProxy
 ```
 
 ### Start IDO workflow
