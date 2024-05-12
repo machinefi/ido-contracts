@@ -4,33 +4,40 @@ pragma solidity ^0.8.19;
 import "./interfaces/IPod.sol";
 import "./interfaces/ILaunchpad.sol";
 import "./interfaces/IioIDStore.sol";
+import "./interfaces/ITokenURIProvider.sol";
+import "./ERC721.sol";
 
-interface IMintableNFT {
-    function mint(address _to) external returns (uint256);
-}
-
-contract Pod is IPod {
+contract Pod is IPod, ERC721 {
+    uint256 nextTokenId;
     address public override launchpad;
     uint256 public override projectId;
-    address public override nft;
     uint256 public override price;
     uint256 public override total;
+    uint256 public override endTime;
     address public override operator;
     uint256 public override soldAmount;
+    address public override tokenURIProvider;
 
     constructor() {
         launchpad = msg.sender;
     }
 
-    function initialize(uint256 _projectId, address _nft, uint256 _price, uint256 _total, address _operator) external {
+    function initialize(
+        string calldata _name,
+        string calldata _symbol,
+        uint256 _projectId,
+        uint256 _price,
+        uint256 _total,
+        address _operator
+    ) external {
         require(launchpad == msg.sender, "only launchpad");
 
+        ERC721.initialize(_name, _symbol);
         projectId = _projectId;
-        nft = _nft;
         price = _price;
         total = _total;
         operator = _operator;
-        emit Initialize(_projectId, _nft, _price, _total, _operator);
+        emit Initialize(_projectId, _price, _total, _operator);
     }
 
     function changeOperator(address _operator) external override {
@@ -64,6 +71,14 @@ contract Pod is IPod {
         emit Withdrawn(_recipient, _amount);
     }
 
+    function setTokenURIProvider(address _provider) external {
+        require(_provider != address(0), "zero address");
+        require(launchpad == msg.sender || operator == msg.sender, "only launchpad or operator");
+
+        tokenURIProvider = _provider;
+        emit SetTokenURIProvider(_provider);
+    }
+
     function buy(address _account, uint256 _amount) external payable override {
         require(_amount > 0, "zero amount");
         require(_account != address(0), "zero address");
@@ -72,10 +87,15 @@ contract Pod is IPod {
         require(msg.value >= _amount * price, "insufficient fund");
 
         for (uint256 i = 0; i < _amount; i++) {
-            uint256 _tokenId = IMintableNFT(nft).mint(_account);
+            uint256 _tokenId = ++nextTokenId;
+            _mint(_account, _tokenId);
 
             emit Bought(_tokenId);
         }
         soldAmount += _amount;
+    }
+
+    function tokenURI(uint256 id) public view virtual override returns (string memory) {
+        return ITokenURIProvider(tokenURIProvider).tokenURI(id);
     }
 }
