@@ -71,6 +71,8 @@ contract Launchpad is ILaunchpad, Ownable {
     }
 
     function setPodBaseURI(address _pod, string calldata _baseURI) external override onlyOwner {
+        require(_status[_pod] != Status.None, "invalid pod");
+
         tokenURIProvider.setBase(_pod, _baseURI);
         Pod(_pod).setTokenURIProvider(address(tokenURIProvider));
     }
