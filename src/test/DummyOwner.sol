@@ -5,6 +5,7 @@ interface ILaunchpad {
     function transferOwnership(address newOwner) external;
     function start(address _pod) external;
     function stop(address _pod) external;
+    function setPodBaseURI(address _pod, string calldata _baseURI) external;
 }
 
 contract DummyOwner is ILaunchpad {
@@ -24,5 +25,12 @@ contract DummyOwner is ILaunchpad {
 
     function stop(address _pod) external override {
         launchpad.stop(_pod);
+    }
+
+    function setPodBaseURI(
+        address _pod,
+        string calldata _baseURI
+    ) external override {
+        launchpad.setPodBaseURI(_pod, _baseURI);
     }
 }

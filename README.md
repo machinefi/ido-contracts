@@ -8,6 +8,11 @@ forge create --legacy --rpc-url $ETH_RPC_URL \
 
 // Launchpad token uri provider: 0x312276F506794ABbe743e3775d0Bd03c5Bc1f4Ce
 // Pod for project 2: 0x18E2D20Bc3BA64d43391a626808d4d78dbC98fC6
+
+// 0xbA2ea0b732BFE261eFE2356339eE0DB53AdECFFe
+forge create --legacy --rpc-url $ETH_RPC_URL \
+  --constructor-args "0xb47BB1BC7CB68d690175C73669606596D7E1cDE1" \
+  --private-key $PRIVATE_KEY src/test/DummyOwner.sol:DummyOwner
 ```
 
 ### Start IDO workflow
