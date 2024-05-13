@@ -1,7 +1,7 @@
 ## IDO contracts
 
 ```
-// 0xb47BB1BC7CB68d690175C73669606596D7E1cDE1
+// 0x2De4af58D2602091315813886aF79f19B91DA416
 forge create --legacy --rpc-url $ETH_RPC_URL \
   --constructor-args "0x6972C35dB95258DB79D662959244Eaa544812c5A" "0x3b9650B88a78e398613eBB442788Fc4eDd1eF768" \
   --private-key $PRIVATE_KEY src/Launchpad.sol:Launchpad
@@ -11,7 +11,7 @@ forge create --legacy --rpc-url $ETH_RPC_URL \
 
 // 0xbA2ea0b732BFE261eFE2356339eE0DB53AdECFFe
 forge create --legacy --rpc-url $ETH_RPC_URL \
-  --constructor-args "0xb47BB1BC7CB68d690175C73669606596D7E1cDE1" \
+  --constructor-args "0x2De4af58D2602091315813886aF79f19B91DA416" \
   --private-key $PRIVATE_KEY src/test/DummyOwner.sol:DummyOwner
 ```
 

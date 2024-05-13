@@ -8,15 +8,21 @@ import "./interfaces/ITokenURIProvider.sol";
 import "./ERC721.sol";
 
 contract Pod is IPod, ERC721 {
+    uint256 public constant DEFAULT_PERIOD = 30 days;
+    uint256 public constant DEFAULT_LIMIT = 5;
+
     uint256 nextTokenId;
     address public override launchpad;
     uint256 public override projectId;
     uint256 public override price;
     uint256 public override total;
+    uint256 public override startTime;
     uint256 public override endTime;
     address public override operator;
     uint256 public override soldAmount;
+    uint256 public override purchaseLimit;
     address public override tokenURIProvider;
+    mapping(address => uint256) public override userBuyAmount;
 
     constructor() {
         launchpad = msg.sender;
@@ -28,7 +34,8 @@ contract Pod is IPod, ERC721 {
         uint256 _projectId,
         uint256 _price,
         uint256 _total,
-        address _operator
+        address _operator,
+        uint256 _startTime
     ) external {
         require(launchpad == msg.sender, "only launchpad");
 
@@ -37,7 +44,10 @@ contract Pod is IPod, ERC721 {
         price = _price;
         total = _total;
         operator = _operator;
-        emit Initialize(_projectId, _price, _total, _operator);
+        startTime = _startTime;
+        endTime = _startTime + DEFAULT_PERIOD;
+        purchaseLimit = DEFAULT_LIMIT;
+        emit Initialize(_projectId, _price, _total, _operator, _startTime, endTime);
     }
 
     function changeOperator(address _operator) external override {
@@ -48,9 +58,28 @@ contract Pod is IPod, ERC721 {
         emit ChangeOperator(_operator);
     }
 
-    function extend(uint256 _amount) external {
-        require(_amount > 0, "zero amount");
+    function adjustTime(uint256 _startTime, uint256 _endTime) external override {
         require(operator == msg.sender, "only operator");
+        require(_endTime > _startTime && _endTime > block.timestamp, "invalid end time");
+
+        if (_startTime >= block.timestamp && _startTime < startTime) {
+            startTime = _startTime;
+        }
+        endTime = _endTime;
+        emit AdjustTime(startTime, _endTime);
+    }
+
+    function adjustLimit(uint256 _limit) external override {
+        require(operator == msg.sender, "only operator");
+        require(_limit > 0, "invalid limit");
+
+        purchaseLimit = _limit;
+        emit AdjustLimit(_limit);
+    }
+
+    function extend(uint256 _amount) external {
+        require(operator == msg.sender, "only operator");
+        require(_amount > 0, "zero amount");
         require(
             IioIDStore(ILaunchpad(launchpad).ioIDStore()).projectAppliedAmount(projectId) >= total + _amount,
             "exceed bought ioIDs"
@@ -80,10 +109,13 @@ contract Pod is IPod, ERC721 {
     }
 
     function buy(address _account, uint256 _amount) external payable override {
+        require(startTime <= block.timestamp, "unstarted");
+        require(block.timestamp <= endTime, "stopped");
         require(_amount > 0, "zero amount");
         require(_account != address(0), "zero address");
-        require(soldAmount + _amount <= total, "insufficient nft");
-        require(ILaunchpad(launchpad).status(address(this)) == ILaunchpad.Status.Selling, "invalid status");
+        require(userBuyAmount[_account] + _amount <= purchaseLimit, "exceed purchase limit");
+        require(soldAmount + _amount <= total, "insufficient pod");
+        require(ILaunchpad(launchpad).status(address(this)) == ILaunchpad.Status.Normal, "invalid status");
         require(msg.value >= _amount * price, "insufficient fund");
 
         for (uint256 i = 0; i < _amount; i++) {
@@ -93,6 +125,7 @@ contract Pod is IPod, ERC721 {
             emit Bought(_tokenId);
         }
         soldAmount += _amount;
+        userBuyAmount[_account] += _amount;
     }
 
     function tokenURI(uint256 id) public view virtual override returns (string memory) {

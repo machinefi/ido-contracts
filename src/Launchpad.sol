@@ -15,7 +15,7 @@ contract Launchpad is ILaunchpad, Ownable {
     LaunchpadTokenURIProvider public tokenURIProvider;
 
     mapping(uint256 => address) public override getPod;
-    mapping(address => Status) _status;
+    mapping(address => Status) public override status;
 
     constructor(address _project, address _ioIDStore) {
         project = _project;
@@ -28,9 +28,11 @@ contract Launchpad is ILaunchpad, Ownable {
         string calldata _name,
         string calldata _symbol,
         uint256 _amount,
-        uint256 _price
+        uint256 _price,
+        uint256 _startTime
     ) external override returns (address pod_) {
         require(_amount > 0, "zero amount");
+        require(_startTime > block.timestamp, "invalid startTime");
         require(getPod[_projectId] == address(0), "already applied");
         require(IProject(project).ownerOf(_projectId) == msg.sender, "only project owner");
 
@@ -44,49 +46,35 @@ contract Launchpad is ILaunchpad, Ownable {
                 pod_ := create2(0, add(bytecode, 32), mload(bytecode), salt)
             }
         }
-        Pod(pod_).initialize(_name, _symbol, _projectId, _price, _amount, msg.sender);
+        Pod(pod_).initialize(_name, _symbol, _projectId, _price, _amount, msg.sender, _startTime);
         getPod[_projectId] = pod_;
-        _status[pod_] = Status.Pending;
+        status[pod_] = Status.Normal;
 
         emit ApplyPod(_projectId, pod_);
     }
 
-    function status(address _pod) external view returns (Status) {
-        Status _s = _status[_pod];
-        if (_s == Status.Selling) {
-            Pod _p = Pod(_pod);
-            if (_p.soldAmount() == _p.total()) {
-                return Status.Sold;
-            }
-        }
-        return _s;
-    }
-
-    function start(address _pod) public override onlyOwner {
-        Status _s = _status[_pod];
-        require(_s == Status.Pending || _s == Status.Stopped, "only pending or stopped");
-        _status[_pod] = Status.Selling;
-
-        emit StartPod(_pod);
-    }
-
     function setPodBaseURI(address _pod, string calldata _baseURI) external override onlyOwner {
-        require(_status[_pod] != Status.None, "invalid pod");
+        require(status[_pod] != Status.None, "invalid pod");
 
         tokenURIProvider.setBase(_pod, _baseURI);
         Pod(_pod).setTokenURIProvider(address(tokenURIProvider));
     }
 
     function stop(address _pod) external override onlyOwner {
-        require(_status[_pod] == Status.Selling, "only selling");
+        require(status[_pod] == Status.Normal, "invalid pod");
 
-        _status[_pod] = Status.Stopped;
+        status[_pod] = Status.Stopped;
         emit StopPod(_pod);
     }
 
-    function withdraw(address _pod, address _recipient, uint256 _amount) external override onlyOwner {
-        require(_status[_pod] != Status.Pending, "invalid status");
+    function resume(address _pod) external override onlyOwner {
+        require(status[_pod] == Status.Stopped, "invalid pod");
 
+        status[_pod] = Status.Normal;
+        emit ResumePod(_pod);
+    }
+
+    function withdraw(address _pod, address _recipient, uint256 _amount) external override onlyOwner {
         Pod(_pod).withdraw(_recipient, _amount);
     }
 }
