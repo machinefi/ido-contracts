@@ -9,7 +9,7 @@ forge create --legacy --rpc-url $ETH_RPC_URL \
 // Launchpad token uri provider: 0x312276F506794ABbe743e3775d0Bd03c5Bc1f4Ce
 // Pod for project 2: 0x18E2D20Bc3BA64d43391a626808d4d78dbC98fC6
 
-// 0xbA2ea0b732BFE261eFE2356339eE0DB53AdECFFe
+// 0xB502e86C583d93D1eA600387c444c4db82895304
 forge create --legacy --rpc-url $ETH_RPC_URL \
   --constructor-args "0x2De4af58D2602091315813886aF79f19B91DA416" \
   --private-key $PRIVATE_KEY src/test/DummyOwner.sol:DummyOwner
